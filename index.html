@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三角函数动态图象生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e6e6e6;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+            position: relative;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 1700px;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #4cc9f0, #4361ee);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 30px;
+            width: 100%;
+            max-width: 1700px;
+            justify-content: center;
+            align-items: flex-start;
+            margin-bottom: 50px;
+        }
+        
+        .unit-circle-container {
+            width: 340px; /* 增大宽度 */
+            height: 340px; /* 增大高度 */
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px; /* 增加内边距 */
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            margin-top: 30px;
+        }
+        
+        .graphs-container {
+            width: 1300px;
+            height: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            flex-shrink: 0;
+        }
+        
+        .function-selector {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .func-btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.08);
+            color: #e6e6e6;
+            border: 2px solid transparent;
+        }
+        
+        .func-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .func-btn.active {
+            border-color: #4cc9f0;
+            box-shadow: 0 0 12px rgba(76, 201, 240, 0.5);
+        }
+        
+        .sin-btn.active {
+            background: rgba(76, 201, 240, 0.18);
+            border-color: #4cc9f0;
+        }
+        
+        .cos-btn.active {
+            background: rgba(247, 37, 133, 0.18);
+            border-color: #f72585;
+        }
+        
+        .tan-btn.active {
+            background: rgba(114, 239, 221, 0.18);
+            border-color: #72efdd;
+        }
+        
+        .graph-area {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .graph-box {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+        }
+        
+        .graph-box.active {
+            display: flex;
+        }
+        
+        .graph-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            color: #fff;
+            height: 30px;
+        }
+        
+        .sin-title { color: #4cc9f0; }
+        .cos-title { color: #f72585; }
+        .tan-title { color: #72efdd; }
+        
+        .graph-title span {
+            margin-right: 8px;
+            font-size: 1.3rem;
+        }
+        
+        .graph-canvas-container {
+            width: 100%;
+            height: calc(100% - 40px);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        #unitCircle {
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .canvas-wrapper {
+            position: relative;
+            width: 310px; /* 增大容器宽度 */
+            height: 310px; /* 增大容器高度 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0 40px 0;
+            flex-wrap: wrap;
+            width: 100%;
+            max-width: 1700px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #4361ee, #3a0ca3);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #e6e6e6;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 20px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .slider-label {
+            font-weight: 600;
+            color: #72efdd;
+            font-size: 0.95rem;
+        }
+        
+        input[type="range"] {
+            width: 180px;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4cc9f0;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(76, 201, 240, 0.7);
+        }
+        
+        .angle-display {
+            font-size: 1rem;
+            color: #f72585;
+            font-weight: 600;
+            min-width: 110px;
+            text-align: center;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            width: 100%;
+            max-width: 1700px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+        
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+        }
+        
+        .sin-legend { background-color: #4cc9f0; }
+        .cos-legend { background-color: #f72585; }
+        .tan-legend { background-color: #72efdd; }
+        .asymptote-legend { 
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 4px,
+                #ff9e00 4px,
+                #ff9e00 8px
+            );
+            border: 1px solid #ff9e00;
+        }
+        
+        .footer-credit {
+            position: fixed;
+            bottom: 10px;
+            right: 15px;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: right;
+            line-height: 1.2;
+            z-index: 100;
+            font-family: Arial, sans-serif;
+        }
+        
+        .axis-label {
+            position: absolute;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: bold;
+        }
+        
+        @media (max-width: 1650px) {
+            body {
+                overflow-x: auto;
+            }
+            
+            .container {
+                min-width: 1650px;
+            }
+            
+            .footer-credit {
+                position: absolute;
+                bottom: 5px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>三角函数动态图象生成器</h1>
+    </div>
+    
+    <div class="container">
+        <div class="unit-circle-container">
+            <h2 class="graph-title">单位圆</h2>
+            <div class="canvas-wrapper">
+                <canvas id="unitCircle" width="310" height="310"></canvas>
+            </div>
+            <div class="angle-display" id="angleValue">角度: 0 rad (0°)</div>
+        </div>
+        
+        <div class="graphs-container">
+            <div class="function-selector">
+                <button id="sinBtn" class="func-btn sin-btn active">正弦函数 y = sin(x)</button>
+                <button id="cosBtn" class="func-btn cos-btn">余弦函数 y = cos(x)</button>
+                <button id="tanBtn" class="func-btn tan-btn">正切函数 y = tan(x)</button>
+            </div>
+            
+            <div class="graph-area">
+                <div id="sinGraphBox" class="graph-box active">
+                    <h2 class="graph-title sin-title"><span>y = sin(x)</span></h2>
+                    <div class="graph-canvas-container">
+                        <canvas id="sinGraph" width="1280" height="380"></canvas>
+                    </div>
+                </div>
+                
+                <div id="cosGraphBox" class="graph-box">
+                    <h2 class="graph-title cos-title"><span>y = cos(x)</span></h2>
+                    <div class="graph-canvas-container">
+                        <canvas id="cosGraph" width="1280" height="380"></canvas>
+                    </div>
+                </div>
+                
+                <div id="tanGraphBox" class="graph-box">
+                    <h2 class="graph-title tan-title"><span>y = tan(x)</span></h2>
+                    <div class="graph-canvas-container">
+                        <canvas id="tanGraph" width="1280" height="380"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button id="toggleAnimation" class="btn btn-primary">开始动画</button>
+        <button id="showNegative" class="btn btn-secondary">显示 -2π 到 0</button>
+        
+        <div class="slider-container">
+            <span class="slider-label">角度调节:</span>
+            <input type="range" id="angleSlider" min="0" max="100" value="0" step="1">
+            <div class="angle-display" id="sliderAngleValue">0π (0°)</div>
+        </div>
+        
+        <button id="resetBtn" class="btn btn-secondary">重置</button>
+    </div>
+    
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color sin-legend"></div>
+            <span>正弦函数 sin(x)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color cos-legend"></div>
+            <span>余弦函数 cos(x)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color tan-legend"></div>
+            <span>正切函数 tan(x)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color asymptote-legend"></div>
+            <span>渐近线</span>
+        </div>
+    </div>
+    
+    <div class="footer-credit">
+        Interactive visualization created by ycj<br>
+        Powered by DeepSeek AI
+    </div>
+
+    <script>
+        // 获取Canvas元素和上下文
+        const unitCircleCanvas = document.getElementById('unitCircle');
+        const unitCircleCtx = unitCircleCanvas.getContext('2d');
+        
+        const sinCanvas = document.getElementById('sinGraph');
+        const sinCtx = sinCanvas.getContext('2d');
+        
+        const cosCanvas = document.getElementById('cosGraph');
+        const cosCtx = cosCanvas.getContext('2d');
+        
+        const tanCanvas = document.getElementById('tanGraph');
+        const tanCtx = tanCanvas.getContext('2d');
+        
+        // 获取控制元素
+        const toggleAnimationBtn = document.getElementById('toggleAnimation');
+        const showNegativeBtn = document.getElementById('showNegative');
+        const angleSlider = document.getElementById('angleSlider');
+        const resetBtn = document.getElementById('resetBtn');
+        const angleValueDisplay = document.getElementById('angleValue');
+        const sliderAngleValue = document.getElementById('sliderAngleValue');
+        
+        // 函数选择按钮
+        const sinBtn = document.getElementById('sinBtn');
+        const cosBtn = document.getElementById('cosBtn');
+        const tanBtn = document.getElementById('tanBtn');
+        
+        // 函数图象容器
+        const sinGraphBox = document.getElementById('sinGraphBox');
+        const cosGraphBox = document.getElementById('cosGraphBox');
+        const tanGraphBox = document.getElementById('tanGraphBox');
+        
+        // 动画状态 - 初始为暂停状态
+        let animationId = null;
+        let isAnimating = false; // 初始为暂停状态
+        let showNegativeRange = false;
+        let currentAngle = 0; // 当前角度（弧度）
+        const animationSpeed = 0.01; // 动画速度减半（弧度/帧）
+        const maxAngle = 4 * Math.PI; // 最大角度（4π）
+        
+        // 当前显示的函数类型
+        let currentFunction = 'sin';
+        
+        // 颜色定义
+        const colors = {
+            sin: '#4cc9f0',
+            cos: '#f72585',
+            tan: '#72efdd',
+            grid: 'rgba(255, 255, 255, 0.1)',
+            axis: 'rgba(255, 255, 255, 0.7)',
+            circle: 'rgba(255, 255, 255, 0.2)',
+            asymptote: '#ff9e00',
+            specialPoint: '#ffcc00',
+            text: '#e6e6e6',
+            negativeArea: 'rgba(255, 255, 255, 0.05)',
+            yPoint: '#4aff4a',
+            arrow: '#ffffff'
+        };
+        
+        // 初始化
+        function init() {
+            // 设置Canvas尺寸（使用固定尺寸）
+            unitCircleCanvas.width = 310; // 增大画布尺寸
+            unitCircleCanvas.height = 310; // 增大画布尺寸
+            
+            sinCanvas.width = 1280;
+            sinCanvas.height = 380;
+            
+            cosCanvas.width = 1280;
+            cosCanvas.height = 380;
+            
+            tanCanvas.width = 1280;
+            tanCanvas.height = 380;
+            
+            // 绘制初始图形
+            drawAll();
+        }
+        
+        // 绘制所有图形
+        function drawAll() {
+            drawUnitCircle();
+            drawCurrentFunctionGraph();
+        }
+        
+        // 绘制单位圆
+        function drawUnitCircle() {
+            const width = unitCircleCanvas.width;
+            const height = unitCircleCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.35;
+            
+            // 清除画布
+            unitCircleCtx.clearRect(0, 0, width, height);
+            
+            // 绘制网格背景
+            drawGrid(unitCircleCtx, width, height, 20);
+            
+            // 绘制坐标轴和箭头
+            drawAxisWithArrows(unitCircleCtx, width, height, centerX, centerY);
+            
+            // 绘制单位圆
+            unitCircleCtx.beginPath();
+            unitCircleCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            unitCircleCtx.strokeStyle = colors.circle;
+            unitCircleCtx.lineWidth = 2;
+            unitCircleCtx.stroke();
+            
+            // 计算当前角度对应的点
+            const currentX = centerX + radius * Math.cos(currentAngle);
+            const currentY = centerY - radius * Math.sin(currentAngle);
+            
+            // 绘制角度线
+            unitCircleCtx.beginPath();
+            unitCircleCtx.moveTo(centerX, centerY);
+            unitCircleCtx.lineTo(currentX, currentY);
+            unitCircleCtx.strokeStyle = colors[currentFunction];
+            unitCircleCtx.lineWidth = 3;
+            unitCircleCtx.stroke();
+            
+            // 绘制角度对应的正弦和余弦线
+            unitCircleCtx.beginPath();
+            unitCircleCtx.moveTo(currentX, currentY);
+            unitCircleCtx.lineTo(currentX, centerY);
+            unitCircleCtx.strokeStyle = colors.cos;
+            unitCircleCtx.lineWidth = 2;
+            unitCircleCtx.setLineDash([5, 3]);
+            unitCircleCtx.stroke();
+            
+            unitCircleCtx.beginPath();
+            unitCircleCtx.moveTo(currentX, currentY);
+            unitCircleCtx.lineTo(centerX, currentY);
+            unitCircleCtx.strokeStyle = colors.sin;
+            unitCircleCtx.lineWidth = 2;
+            unitCircleCtx.stroke();
+            
+            unitCircleCtx.setLineDash([]);
+            
+            // 绘制角度点
+            unitCircleCtx.beginPath();
+            unitCircleCtx.arc(currentX, currentY, 6, 0, 2 * Math.PI);
+            unitCircleCtx.fillStyle = colors.specialPoint;
+            unitCircleCtx.fill();
+            
+            // 显示当前角度
+            const degrees = (currentAngle * 180 / Math.PI).toFixed(1);
+            angleValueDisplay.textContent = `角度: ${currentAngle.toFixed(2)} rad (${degrees}°)`;
+            
+            // 更新滑块显示
+            const piValue = (currentAngle / Math.PI).toFixed(2);
+            sliderAngleValue.textContent = `${piValue}π (${degrees}°)`;
+        }
+        
+        // 绘制带箭头的坐标轴（简化版，只有箭头+字母）
+        function drawAxisWithArrows(ctx, width, height, centerX, centerY) {
+            const arrowSize = 8;
+            
+            // 绘制x轴
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.strokeStyle = colors.axis;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            
+            // 绘制x轴箭头
+            ctx.beginPath();
+            ctx.moveTo(width - arrowSize, centerY - arrowSize/2);
+            ctx.lineTo(width, centerY);
+            ctx.lineTo(width - arrowSize, centerY + arrowSize/2);
+            ctx.fillStyle = colors.arrow;
+            ctx.fill();
+            
+            // 标注x（放在箭头旁边）
+            ctx.fillStyle = colors.arrow;
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('x', width - 20, centerY - 15);
+            
+            // 绘制y轴
+            ctx.beginPath();
+            ctx.moveTo(centerX, height);
+            ctx.lineTo(centerX, 0);
+            ctx.strokeStyle = colors.axis;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            
+            // 绘制y轴箭头
+            ctx.beginPath();
+            ctx.moveTo(centerX - arrowSize/2, arrowSize);
+            ctx.lineTo(centerX, 0);
+            ctx.lineTo(centerX + arrowSize/2, arrowSize);
+            ctx.fillStyle = colors.arrow;
+            ctx.fill();
+            
+            // 标注y（放在箭头旁边）
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText('y', centerX + 10, 5);
+        }
+        
+        // 绘制当前选中的函数图象
+        function drawCurrentFunctionGraph() {
+            switch(currentFunction) {
+                case 'sin':
+                    drawSinGraph();
+                    break;
+                case 'cos':
+                    drawCosGraph();
+                    break;
+                case 'tan':
+                    drawTanGraph();
+                    break;
+            }
+        }
+        
+        // 绘制正弦函数图象
+        function drawSinGraph() {
+            const width = sinCanvas.width;
+            const height = sinCanvas.height;
+            
+            // 计算坐标系参数 - 调整使得x轴左边界从-2.5π开始
+            const totalWidth = 6 * Math.PI; // 总宽度为6π
+            const leftOffset = 2.5 * Math.PI; // 左边偏移2.5π
+            const scaleX = width / totalWidth;
+            const scaleY = height * 0.4;
+            const originX = width * (leftOffset / totalWidth); // 原点位置调整
+            const originY = height / 2;
+            
+            // 清除画布
+            sinCtx.clearRect(0, 0, width, height);
+            
+            // 绘制网格
+            drawGrid(sinCtx, width, height, 40);
+            
+            // 绘制带箭头的坐标轴
+            drawAxisWithArrows(sinCtx, width, height, originX, originY);
+            
+            // 如果显示负区域，绘制背景色
+            if (showNegativeRange) {
+                sinCtx.fillStyle = colors.negativeArea;
+                sinCtx.fillRect(0, 0, originX, height);
+            }
+            
+            // 标记特殊位置
+            markSpecialPoints(sinCtx, originX, originY, scaleX, 'sin');
+            
+            // 标注y轴上的特殊点 (0,1) 和 (0,-1)
+            markYAxisPoints(sinCtx, originX, originY, scaleY, 'sin');
+            
+            // 绘制正弦曲线
+            sinCtx.beginPath();
+            sinCtx.strokeStyle = colors.sin;
+            sinCtx.lineWidth = 3;
+            
+            const startX = showNegativeRange ? -2 * Math.PI : 0;
+            const endX = 4 * Math.PI;
+            
+            for (let x = startX; x <= endX; x += 0.005) {
+                const y = Math.sin(x);
+                const canvasX = originX + x * scaleX;
+                const canvasY = originY - y * scaleY;
+                
+                if (x === startX) {
+                    sinCtx.moveTo(canvasX, canvasY);
+                } else {
+                    sinCtx.lineTo(canvasX, canvasY);
+                }
+            }
+            
+            sinCtx.stroke();
+            
+            // 标记当前角度点
+            const currentY = Math.sin(currentAngle);
+            const currentCanvasX = originX + currentAngle * scaleX;
+            const currentCanvasY = originY - currentY * scaleY;
+            
+            sinCtx.beginPath();
+            sinCtx.arc(currentCanvasX, currentCanvasY, 6, 0, 2 * Math.PI);
+            sinCtx.fillStyle = colors.specialPoint;
+            sinCtx.fill();
+            
+            // 标记坐标轴范围
+            sinCtx.fillStyle = colors.text;
+            sinCtx.font = '14px Arial';
+            sinCtx.textAlign = 'center';
+            sinCtx.textBaseline = 'top';
+            
+            // x轴标注
+            if (showNegativeRange) {
+                // 显示-2π到4π
+                sinCtx.fillText('-2π', originX - 2 * Math.PI * scaleX, originY + 10);
+                sinCtx.fillText('0', originX, originY + 10);
+                sinCtx.fillText('2π', originX + 2 * Math.PI * scaleX, originY + 10);
+                sinCtx.fillText('4π', originX + 4 * Math.PI * scaleX, originY + 10);
+            } else {
+                // 只显示0到4π
+                sinCtx.fillText('0', originX, originY + 10);
+                sinCtx.fillText('π', originX + Math.PI * scaleX, originY + 10);
+                sinCtx.fillText('2π', originX + 2 * Math.PI * scaleX, originY + 10);
+                sinCtx.fillText('3π', originX + 3 * Math.PI * scaleX, originY + 10);
+                sinCtx.fillText('4π', originX + 4 * Math.PI * scaleX, originY + 10);
+            }
+        }
+        
+        // 绘制余弦函数图象
+        function drawCosGraph() {
+            const width = cosCanvas.width;
+            const height = cosCanvas.height;
+            
+            // 计算坐标系参数 - 调整使得x轴左边界从-2.5π开始
+            const totalWidth = 6 * Math.PI; // 总宽度为6π
+            const leftOffset = 2.5 * Math.PI; // 左边偏移2.5π
+            const scaleX = width / totalWidth;
+            const scaleY = height * 0.4;
+            const originX = width * (leftOffset / totalWidth); // 原点位置调整
+            const originY = height / 2;
+            
+            // 清除画布
+            cosCtx.clearRect(0, 0, width, height);
+            
+            // 绘制网格
+            drawGrid(cosCtx, width, height, 40);
+            
+            // 绘制带箭头的坐标轴
+            drawAxisWithArrows(cosCtx, width, height, originX, originY);
+            
+            // 如果显示负区域，绘制背景色
+            if (showNegativeRange) {
+                cosCtx.fillStyle = colors.negativeArea;
+                cosCtx.fillRect(0, 0, originX, height);
+            }
+            
+            // 标记特殊位置
+            markSpecialPoints(cosCtx, originX, originY, scaleX, 'cos');
+            
+            // 标注y轴上的特殊点 (0,1) 和 (0,-1)
+            markYAxisPoints(cosCtx, originX, originY, scaleY, 'cos');
+            
+            // 绘制余弦曲线
+            cosCtx.beginPath();
+            cosCtx.strokeStyle = colors.cos;
+            cosCtx.lineWidth = 3;
+            
+            const startX = showNegativeRange ? -2 * Math.PI : 0;
+            const endX = 4 * Math.PI;
+            
+            for (let x = startX; x <= endX; x += 0.005) {
+                const y = Math.cos(x);
+                const canvasX = originX + x * scaleX;
+                const canvasY = originY - y * scaleY;
+                
+                if (x === startX) {
+                    cosCtx.moveTo(canvasX, canvasY);
+                } else {
+                    cosCtx.lineTo(canvasX, canvasY);
+                }
+            }
+            
+            cosCtx.stroke();
+            
+            // 标记当前角度点
+            const currentY = Math.cos(currentAngle);
+            const currentCanvasX = originX + currentAngle * scaleX;
+            const currentCanvasY = originY - currentY * scaleY;
+            
+            cosCtx.beginPath();
+            cosCtx.arc(currentCanvasX, currentCanvasY, 6, 0, 2 * Math.PI);
+            cosCtx.fillStyle = colors.specialPoint;
+            cosCtx.fill();
+            
+            // 标记坐标轴范围
+            cosCtx.fillStyle = colors.text;
+            cosCtx.font = '14px Arial';
+            cosCtx.textAlign = 'center';
+            cosCtx.textBaseline = 'top';
+            
+            // x轴标注
+            if (showNegativeRange) {
+                // 显示-2π到4π
+                cosCtx.fillText('-2π', originX - 2 * Math.PI * scaleX, originY + 10);
+                cosCtx.fillText('0', originX, originY + 10);
+                cosCtx.fillText('2π', originX + 2 * Math.PI * scaleX, originY + 10);
+                cosCtx.fillText('4π', originX + 4 * Math.PI * scaleX, originY + 10);
+            } else {
+                // 只显示0到4π
+                cosCtx.fillText('0', originX, originY + 10);
+                cosCtx.fillText('π', originX + Math.PI * scaleX, originY + 10);
+                cosCtx.fillText('2π', originX + 2 * Math.PI * scaleX, originY + 10);
+                cosCtx.fillText('3π', originX + 3 * Math.PI * scaleX, originY + 10);
+                cosCtx.fillText('4π', originX + 4 * Math.PI * scaleX, originY + 10);
+            }
+        }
+        
+        // 绘制正切函数图象
+        function drawTanGraph() {
+            const width = tanCanvas.width;
+            const height = tanCanvas.height;
+            
+            // 计算坐标系参数 - 调整使得x轴左边界从-2.5π开始
+            const totalWidth = 6 * Math.PI; // 总宽度为6π
+            const leftOffset = 2.5 * Math.PI; // 左边偏移2.5π
+            const scaleX = width / totalWidth;
+            const scaleY = height * 0.2;
+            const originX = width * (leftOffset / totalWidth); // 原点位置调整
+            const originY = height / 2;
+            
+            // 清除画布
+            tanCtx.clearRect(0, 0, width, height);
+            
+            // 绘制网格
+            drawGrid(tanCtx, width, height, 40);
+            
+            // 绘制带箭头的坐标轴
+            drawAxisWithArrows(tanCtx, width, height, originX, originY);
+            
+            // 如果显示负区域，绘制背景色
+            if (showNegativeRange) {
+                tanCtx.fillStyle = colors.negativeArea;
+                tanCtx.fillRect(0, 0, originX, height);
+            }
+            
+            // 标记特殊位置和渐近线
+            markSpecialPoints(tanCtx, originX, originY, scaleX, 'tan');
+            
+            // 绘制正切曲线
+            tanCtx.beginPath();
+            tanCtx.strokeStyle = colors.tan;
+            tanCtx.lineWidth = 3;
+            
+            let lastValidPoint = null;
+            const startX = showNegativeRange ? -2 * Math.PI : 0;
+            const endX = 4 * Math.PI;
+            
+            for (let x = startX; x <= endX; x += 0.005) {
+                // 避免在渐近线附近绘制
+                if (Math.abs(Math.cos(x)) > 0.01) {
+                    const y = Math.tan(x);
+                    
+                    // 限制y值范围，避免图象过于陡峭
+                    const limitedY = Math.max(Math.min(y, 10), -10);
+                    
+                    const canvasX = originX + x * scaleX;
+                    const canvasY = originY - limitedY * scaleY;
+                    
+                    if (lastValidPoint === null) {
+                        tanCtx.moveTo(canvasX, canvasY);
+                    } else {
+                        // 检查两点之间是否有渐近线
+                        const xDiff = Math.abs(x - lastValidPoint.x);
+                        if (xDiff < 0.01) {
+                            tanCtx.lineTo(canvasX, canvasY);
+                        } else {
+                            // 如果有间断，开始新的线段
+                            tanCtx.moveTo(canvasX, canvasY);
+                        }
+                    }
+                    
+                    lastValidPoint = {x, y: limitedY};
+                } else {
+                    lastValidPoint = null;
+                }
+            }
+            
+            tanCtx.stroke();
+            
+            // 标记当前角度点（如果存在）
+            if (Math.abs(Math.cos(currentAngle)) > 0.01) {
+                const currentY = Math.tan(currentAngle);
+                const limitedY = Math.max(Math.min(currentY, 10), -10);
+                const currentCanvasX = originX + currentAngle * scaleX;
+                const currentCanvasY = originY - limitedY * scaleY;
+                
+                tanCtx.beginPath();
+                tanCtx.arc(currentCanvasX, currentCanvasY, 6, 0, 2 * Math.PI);
+                tanCtx.fillStyle = colors.specialPoint;
+                tanCtx.fill();
+            }
+            
+            // 标记坐标轴范围
+            tanCtx.fillStyle = colors.text;
+            tanCtx.font = '14px Arial';
+            tanCtx.textAlign = 'center';
+            tanCtx.textBaseline = 'top';
+            
+            // x轴标注
+            if (showNegativeRange) {
+                // 显示-2π到4π
+                tanCtx.fillText('-2π', originX - 2 * Math.PI * scaleX, originY + 10);
+                tanCtx.fillText('0', originX, originY + 10);
+                tanCtx.fillText('2π', originX + 2 * Math.PI * scaleX, originY + 10);
+                tanCtx.fillText('4π', originX + 4 * Math.PI * scaleX, originY + 10);
+            } else {
+                // 只显示0到4π
+                tanCtx.fillText('0', originX, originY + 10);
+                tanCtx.fillText('π', originX + Math.PI * scaleX, originY + 10);
+                tanCtx.fillText('2π', originX + 2 * Math.PI * scaleX, originY + 10);
+                tanCtx.fillText('3π', originX + 3 * Math.PI * scaleX, originY + 10);
+                tanCtx.fillText('4π', originX + 4 * Math.PI * scaleX, originY + 10);
+            }
+        }
+        
+        // 绘制网格
+        function drawGrid(ctx, width, height, gridSize) {
+            ctx.strokeStyle = colors.grid;
+            ctx.lineWidth = 0.5;
+            
+            // 绘制垂直线
+            for (let x = 0; x <= width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            }
+            
+            // 绘制水平线
+            for (let y = 0; y <= height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+            }
+        }
+        
+        // 标记y轴上的特殊点 (0,1) 和 (0,-1) - 减少加粗程度
+        function markYAxisPoints(ctx, originX, originY, scaleY, funcType) {
+            if (funcType !== 'sin' && funcType !== 'cos') return;
+            
+            ctx.fillStyle = colors.yPoint;
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            
+            // 标记点 (0, 1)
+            const y1 = originY - 1 * scaleY;
+            ctx.beginPath();
+            ctx.arc(originX, y1, 6, 0, 2 * Math.PI); // 减小内圆半径
+            ctx.fillStyle = colors.yPoint;
+            ctx.fill();
+            
+            // 绘制外圈（减小加粗程度）
+            ctx.beginPath();
+            ctx.arc(originX, y1, 8, 0, 2 * Math.PI); // 减小外圆半径
+            ctx.strokeStyle = colors.yPoint;
+            ctx.lineWidth = 2; // 减小线宽
+            ctx.stroke();
+            
+            ctx.fillText('1', originX - 10, y1);
+            
+            // 标记点 (0, -1)
+            const yMinus1 = originY - (-1) * scaleY;
+            ctx.beginPath();
+            ctx.arc(originX, yMinus1, 6, 0, 2 * Math.PI); // 减小内圆半径
+            ctx.fillStyle = colors.yPoint;
+            ctx.fill();
+            
+            // 绘制外圈（减小加粗程度）
+            ctx.beginPath();
+            ctx.arc(originX, yMinus1, 8, 0, 2 * Math.PI); // 减小外圆半径
+            ctx.strokeStyle = colors.yPoint;
+            ctx.lineWidth = 2; // 减小线宽
+            ctx.stroke();
+            
+            ctx.fillText('-1', originX - 10, yMinus1);
+        }
+        
+        // 标记特殊点（对称轴、对称中心等）
+        function markSpecialPoints(ctx, originX, originY, scaleX, funcType) {
+            const startX = showNegativeRange ? -2 * Math.PI : 0;
+            const endX = 4 * Math.PI;
+            
+            ctx.fillStyle = colors.text;
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            if (funcType === 'sin') {
+                // sin的对称轴: x = π/2 + kπ
+                ctx.strokeStyle = colors.specialPoint;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 3]); // 虚线
+                
+                for (let k = showNegativeRange ? -2 : 0; k <= 4; k++) {
+                    const x = Math.PI/2 + k * Math.PI;
+                    if (x >= startX && x <= endX) {
+                        const canvasX = originX + x * scaleX;
+                        
+                        // 绘制垂直虚线
+                        ctx.beginPath();
+                        ctx.moveTo(canvasX, 0);
+                        ctx.lineTo(canvasX, ctx.canvas.height);
+                        ctx.stroke();
+                        
+                        // 标注x值，使用带"/"的分数格式（只标注分数点）
+                        let label = '';
+                        if (k === 0) label = 'π/2';
+                        else if (k === 1) label = '3π/2';
+                        else if (k === 2) label = '5π/2';
+                        else if (k === 3) label = '7π/2';
+                        else if (k === -1) label = '-π/2';
+                        else if (k === -2) label = '-3π/2';
+                        
+                        if (label) {
+                            // 只在上方标注分数点，避免与x轴底部标注重复
+                            ctx.fillText(label, canvasX, originY + 35);
+                        }
+                    }
+                }
+                
+                ctx.setLineDash([]); // 恢复实线
+                
+                // sin的对称中心: (kπ, 0) - 加粗显示
+                for (let k = showNegativeRange ? -2 : 0; k <= 4; k++) {
+                    const x = k * Math.PI;
+                    if (x >= startX && x <= endX) {
+                        const canvasX = originX + x * scaleX;
+                        
+                        // 绘制对称中心点（加粗）
+                        ctx.beginPath();
+                        ctx.arc(canvasX, originY, 6, 0, 2 * Math.PI); // 减小半径
+                        ctx.fillStyle = colors.specialPoint;
+                        ctx.fill();
+                        
+                        // 绘制外圈（减小加粗程度）
+                        ctx.beginPath();
+                        ctx.arc(canvasX, originY, 8, 0, 2 * Math.PI); // 减小外圆半径
+                        ctx.strokeStyle = colors.specialPoint;
+                        ctx.lineWidth = 2; // 减小线宽
+                        ctx.stroke();
+                        
+                        // 不在上方标注整数π点，避免与x轴底部标注重复
+                        // 只标注不在x轴底部显示的点
+                        let shouldLabel = false;
+                        let label = '';
+                        
+                        if (k === -2) {
+                            shouldLabel = !showNegativeRange; // -2π只在显示负区域时标注
+                            label = '-2π';
+                        } else if (k === -1) {
+                            shouldLabel = showNegativeRange; // -π只在显示负区域时标注
+                            label = '-π';
+                        } else if (k === 1 || k === 3) {
+                            // π和3π已经在x轴底部标注，不在上方重复标注
+                            shouldLabel = false;
+                        }
+                        
+                        if (shouldLabel && label) {
+                            ctx.fillStyle = colors.text;
+                            ctx.fillText(label, canvasX, originY + 35);
+                        }
+                    }
+                }
+            } else if (funcType === 'cos') {
+                // cos的对称轴: x = kπ
+                ctx.strokeStyle = colors.specialPoint;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 3]); // 虚线
+                
+                for (let k = showNegativeRange ? -2 : 0; k <= 4; k++) {
+                    const x = k * Math.PI;
+                    if (x >= startX && x <= endX) {
+                        const canvasX = originX + x * scaleX;
+                        
+                        // 绘制垂直虚线
+                        ctx.beginPath();
+                        ctx.moveTo(canvasX, 0);
+                        ctx.lineTo(canvasX, ctx.canvas.height);
+                        ctx.stroke();
+                        
+                        // 不在上方标注整数π点，避免与x轴底部标注重复
+                        // 只标注不在x轴底部显示的点
+                        let shouldLabel = false;
+                        let label = '';
+                        
+                        if (k === -2) {
+                            shouldLabel = !showNegativeRange; // -2π只在显示负区域时标注
+                            label = '-2π';
+                        } else if (k === -1) {
+                            shouldLabel = showNegativeRange; // -π只在显示负区域时标注
+                            label = '-π';
+                        } else if (k === 1 || k === 3) {
+                            // π和3π已经在x轴底部标注，不在上方重复标注
+                            shouldLabel = false;
+                        }
+                        
+                        if (shouldLabel && label) {
+                            ctx.fillText(label, canvasX, originY + 35);
+                        }
+                    }
+                }
+                
+                ctx.setLineDash([]); // 恢复实线
+                
+                // cos的对称中心: (π/2 + kπ, 0) - 加粗显示
+                for (let k = showNegativeRange ? -2 : 0; k <= 4; k++) {
+                    const x = Math.PI/2 + k * Math.PI;
+                    if (x >= startX && x <= endX) {
+                        const canvasX = originX + x * scaleX;
+                        
+                        // 绘制对称中心点（加粗）
+                        ctx.beginPath();
+                        ctx.arc(canvasX, originY, 6, 0, 2 * Math.PI); // 减小半径
+                        ctx.fillStyle = colors.specialPoint;
+                        ctx.fill();
+                        
+                        // 绘制外圈（减小加粗程度）
+                        ctx.beginPath();
+                        ctx.arc(canvasX, originY, 8, 0, 2 * Math.PI); // 减小外圆半径
+                        ctx.strokeStyle = colors.specialPoint;
+                        ctx.lineWidth = 2; // 减小线宽
+                        ctx.stroke();
+                        
+                        // 标注x值，使用带"/"的分数格式（只标注分数点）
+                        let label = '';
+                        if (k === 0) label = 'π/2';
+                        else if (k === 1) label = '3π/2';
+                        else if (k === 2) label = '5π/2';
+                        else if (k === 3) label = '7π/2';
+                        else if (k === -1) label = '-π/2';
+                        else if (k === -2) label = '-3π/2';
+                        
+                        if (label) {
+                            // 只在上方标注分数点，避免与x轴底部标注重复
+                            ctx.fillText(label, canvasX, originY + 35);
+                        }
+                    }
+                }
+            } else if (funcType === 'tan') {
+                // 绘制渐近线（虚线）
+                ctx.strokeStyle = colors.asymptote;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 3]); // 虚线
+                
+                // tan的渐近线: x = π/2 + kπ
+                for (let k = showNegativeRange ? -2 : 0; k <= 4; k++) {
+                    const x = Math.PI/2 + k * Math.PI;
+                    if (x >= startX && x <= endX) {
+                        const canvasX = originX + x * scaleX;
+                        
+                        // 绘制渐近线
+                        ctx.beginPath();
+                        ctx.moveTo(canvasX, 0);
+                        ctx.lineTo(canvasX, ctx.canvas.height);
+                        ctx.stroke();
+                        
+                        // 标注x值，使用带"/"的分数格式（只标注分数点）
+                        let label = '';
+                        if (k === 0) label = 'π/2';
+                        else if (k === 1) label = '3π/2';
+                        else if (k === 2) label = '5π/2';
+                        else if (k === 3) label = '7π/2';
+                        else if (k === -1) label = '-π/2';
+                        else if (k === -2) label = '-3π/2';
+                        
+                        if (label) {
+                            // 只在上方标注分数点，避免与x轴底部标注重复
+                            ctx.fillText(label, canvasX, originY + 35);
+                        }
+                    }
+                }
+                
+                ctx.setLineDash([]); // 恢复实线
+                
+                // tan的对称中心: (kπ, 0) - 加粗显示
+                for (let k = showNegativeRange ? -2 : 0; k <= 4; k++) {
+                    const x = k * Math.PI;
+                    if (x >= startX && x <= endX && Math.abs(Math.cos(x)) > 0.01) {
+                        const canvasX = originX + x * scaleX;
+                        
+                        // 绘制对称中心点（加粗）
+                        ctx.beginPath();
+                        ctx.arc(canvasX, originY, 6, 0, 2 * Math.PI); // 减小半径
+                        ctx.fillStyle = colors.specialPoint;
+                        ctx.fill();
+                        
+                        // 绘制外圈（减小加粗程度）
+                        ctx.beginPath();
+                        ctx.arc(canvasX, originY, 8, 0, 2 * Math.PI); // 减小外圆半径
+                        ctx.strokeStyle = colors.specialPoint;
+                        ctx.lineWidth = 2; // 减小线宽
+                        ctx.stroke();
+                        
+                        // 不在上方标注整数π点，避免与x轴底部标注重复
+                        // 只标注不在x轴底部显示的点
+                        let shouldLabel = false;
+                        let label = '';
+                        
+                        if (k === -2) {
+                            shouldLabel = !showNegativeRange; // -2π只在显示负区域时标注
+                            label = '-2π';
+                        } else if (k === -1) {
+                            shouldLabel = showNegativeRange; // -π只在显示负区域时标注
+                            label = '-π';
+                        } else if (k === 1 || k === 3) {
+                            // π和3π已经在x轴底部标注，不在上方重复标注
+                            shouldLabel = false;
+                        }
+                        
+                        if (shouldLabel && label) {
+                            ctx.fillStyle = colors.text;
+                            ctx.fillText(label, canvasX, originY + 35);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 动画循环
+        function animate() {
+            if (!isAnimating) return;
+            
+            // 更新角度
+            currentAngle += animationSpeed;
+            
+            // 如果角度超过4π，重置为0
+            if (currentAngle > maxAngle) {
+                currentAngle = 0;
+            }
+            
+            // 更新滑块位置
+            const sliderValue = (currentAngle / maxAngle) * 100;
+            angleSlider.value = sliderValue;
+            
+            // 绘制所有图形
+            drawAll();
+            
+            // 继续动画
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        // 函数选择事件
+        function selectFunction(funcType) {
+            currentFunction = funcType;
+            
+            // 更新按钮状态
+            sinBtn.classList.remove('active');
+            cosBtn.classList.remove('active');
+            tanBtn.classList.remove('active');
+            
+            sinGraphBox.classList.remove('active');
+            cosGraphBox.classList.remove('active');
+            tanGraphBox.classList.remove('active');
+            
+            if (funcType === 'sin') {
+                sinBtn.classList.add('active');
+                sinGraphBox.classList.add('active');
+            } else if (funcType === 'cos') {
+                cosBtn.classList.add('active');
+                cosGraphBox.classList.add('active');
+            } else if (funcType === 'tan') {
+                tanBtn.classList.add('active');
+                tanGraphBox.classList.add('active');
+            }
+            
+            // 重新绘制
+            drawAll();
+        }
+        
+        // 事件监听器
+        toggleAnimationBtn.addEventListener('click', () => {
+            isAnimating = !isAnimating;
+            toggleAnimationBtn.textContent = isAnimating ? '暂停动画' : '开始动画';
+            
+            if (isAnimating) {
+                animate();
+            } else {
+                cancelAnimationFrame(animationId);
+            }
+        });
+        
+        showNegativeBtn.addEventListener('click', () => {
+            showNegativeRange = !showNegativeRange;
+            showNegativeBtn.textContent = showNegativeRange ? 
+                '隐藏 -2π 到 0' : '显示 -2π 到 0';
+            drawAll();
+        });
+        
+        angleSlider.addEventListener('input', () => {
+            const sliderValue = parseInt(angleSlider.value);
+            currentAngle = (sliderValue / 100) * maxAngle;
+            
+            // 如果动画正在运行，先暂停
+            const wasAnimating = isAnimating;
+            if (wasAnimating) {
+                isAnimating = false;
+                cancelAnimationFrame(animationId);
+                toggleAnimationBtn.textContent = '开始动画';
+            }
+            
+            drawAll();
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            currentAngle = 0;
+            angleSlider.value = 0;
+            
+            // 如果动画正在运行，暂停
+            if (isAnimating) {
+                isAnimating = false;
+                cancelAnimationFrame(animationId);
+                toggleAnimationBtn.textContent = '开始动画';
+            }
+            
+            drawAll();
+        });
+        
+        // 函数选择按钮事件
+        sinBtn.addEventListener('click', () => selectFunction('sin'));
+        cosBtn.addEventListener('click', () => selectFunction('cos'));
+        tanBtn.addEventListener('click', () => selectFunction('tan'));
+        
+        // 初始化应用
+        init();
+    </script>
+</body>
+</html>
